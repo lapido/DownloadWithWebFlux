@@ -29,7 +29,7 @@ public class CsvWriterService {
         users.add(new User("Adam Shaw", "adam.shaw@example.com", "DE"));
         users.add(new User("Bisi Olukoja", "bisi@example.com", "US"));
 
-        return Mono.create(monoSink -> {
+        return Mono.fromCallable(() -> {
             try {
                 ByteArrayInOutStream stream = new ByteArrayInOutStream();
                 OutputStreamWriter streamWriter = new OutputStreamWriter(stream);
@@ -48,15 +48,13 @@ public class CsvWriterService {
 
                 beanToCsv.write(users);
                 streamWriter.flush();
-                monoSink.success(stream.getInputStream());
+                return stream.getInputStream();
             }
-            catch ( CsvException | IOException e) {
-                System.out.println(e);
-                monoSink.error(e);
+            catch (CsvException | IOException e) {
+                throw new RuntimeException(e);
             }
 
-        }).subscribeOn(Schedulers.single())
-                .cast(ByteArrayInputStream.class);
+        }).subscribeOn(Schedulers.boundedElastic());
 
     }
 }
